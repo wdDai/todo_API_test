@@ -1,0 +1,35 @@
+{
+  "properties": [
+    {
+      "name": "todo.jdbc.host",
+      "type": "java.lang.String",
+      "description": "JDBC server host.",
+      "defaultValue": "localhost"
+    },{
+      "name": "todo.jdbc.port",
+      "type": "java.lang.String",
+      "description": "JDBC server port.",
+      "defaultValue": "9099"
+    },{
+      "name": "todo.jdbc.driverClassName",
+      "type": "java.lang.String",
+      "description": "Full qualified class name for JDBC driver.",
+      "defaultValue": "org.hsqldb.jdbcDriver"
+    },{
+      "name": "todo.jdbc.url",
+      "type": "java.lang.String",
+      "description": "JDBC connection url.",
+      "defaultValue": "jdbc:hsqldb:hsql://localhost:9099/testdb"
+    },{
+      "name": "todo.jdbc.username",
+      "type": "java.lang.String",
+      "description": "JDBC user name.",
+      "defaultValue": "sa"
+    },{
+      "name": "todo.jdbc.password",
+      "type": "java.lang.String",
+      "description": "JDBC user password.",
+      "defaultValue": ""
+    }
+  ]
+}
