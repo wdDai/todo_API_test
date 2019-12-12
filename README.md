@@ -39,5 +39,5 @@ You will see the web UI of the todo list. Now add some new todo entries manually
 API doc
 ---------
 
-    http://localhost:8080/swagger-ui.html
+    http://localhost:8081/swagger-ui.html
 
