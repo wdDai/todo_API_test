@@ -6,6 +6,7 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.testng.annotations.DataProvider;
@@ -157,7 +158,7 @@ public class TestClass extends BaseClass {
     }
 
     @Test
-    public void deleteEntriesByTitle() throws IOException {
+    public void testDeleteEntriesByTitle() throws IOException {
         TestUtil.updateTodolist();
         Entry entry = todoList.get(0);
         HttpDelete delete = new HttpDelete( TODO_URL + "?title=" + entry.title);
@@ -170,5 +171,58 @@ public class TestClass extends BaseClass {
         assertEquals(actualStatus, HttpStatus.SC_OK);
         TestUtil.updateTodolist();
         assertFalse(todoList.stream().anyMatch(entryI -> entryI.title.equals(entry.title)));
+    }
+
+    @Test
+    public void testDeleteEntryById() throws IOException {
+        // Arrange
+        Entry entry = todoList.get(0);
+        HttpDelete delete = new HttpDelete(TODO_URL + "/" + entry.id);
+
+        // Act
+        response = client.execute(delete);
+        int actualStatus = response.getStatusLine().getStatusCode();
+
+        // Assert
+        assertEquals(actualStatus, HttpStatus.SC_OK);
+        TestUtil.updateTodolist();
+        assertFalse(todoList.stream().anyMatch(entryI -> entryI.id.equals(entry.id)));
+    }
+
+    @Test
+    public void testFindEntryById() throws IOException {
+        Entry entryFound;
+        Entry entry = todoList.get(0);
+
+        // Act
+        HttpGet get = new HttpGet(TODO_URL + "/" + entry.id);
+        response = client.execute(get);
+        int actualStatus = response.getStatusLine().getStatusCode();
+
+        // Assert
+        assertEquals(actualStatus, HttpStatus.SC_OK);
+        String jsonString = EntityUtils.toString(response.getEntity());
+        JsonObject entryJson = JsonParser.parseString(jsonString).getAsJsonObject();
+        Gson gson = new Gson();
+        entryFound = gson.fromJson(entryJson, Entry.class);
+        assertTrue(entry.equals(entryFound));
+    }
+
+    @Test
+    public void testSetEntryStatus() throws IOException {
+        // Arrange
+        Entry entry = todoList.get(0);
+        boolean done = !entry.done;
+        HttpPut put = new HttpPut(TODO_URL + "/" + entry.id + "?done=" + done);
+
+        // Act
+        response = client.execute(put);
+        int actualStatus = response.getStatusLine().getStatusCode();
+
+        // Assert
+        assertEquals(actualStatus, HttpStatus.SC_OK);
+        TestUtil.updateTodolist();
+        entry = todoList.get(0);
+        assertEquals(done, (boolean) entry.done);
     }
 }
