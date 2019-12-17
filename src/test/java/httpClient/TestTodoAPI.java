@@ -19,7 +19,7 @@ import java.util.ArrayList;
 
 import static org.testng.Assert.*;
 
-public class TestClass extends BaseClass {
+public class TestTodoAPI extends BaseTest {
     @DataProvider
     private Object[] newEntries() {
         JsonArray newEntriesJsonArray;

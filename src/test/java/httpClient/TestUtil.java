@@ -13,7 +13,7 @@ import org.apache.http.util.EntityUtils;
 import java.io.*;
 import java.util.ArrayList;
 
-public class TestUtil extends BaseClass{
+public class TestUtil extends BaseTest {
 
     public static int numberOfEntries(ArrayList<Entry> todolist, Entry entry){
         int n = 0;
