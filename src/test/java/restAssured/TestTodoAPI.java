@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
+import static io.restassured.RestAssured.delete;
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
 import static org.testng.Assert.assertEquals;
@@ -44,11 +45,23 @@ public class TestTodoAPI extends BaseTest {
                 // Act
                         post(TODO_LIST_URL).
                 then().
+                // Assert
                 assertThat().statusCode(HttpStatus.SC_OK);
 
-        // Assert
         TestUtil.updateTodoList();
         int m = TestUtil.getNumberOfEntries(todoList, entry);
         assertEquals(m, n + 1);
+    }
+
+    @Test
+    public void testDeleteAllEntries(){
+        // Act
+        delete(TODO_LIST_URL).then().
+
+                // Assert
+                assertThat().statusCode(HttpStatus.SC_OK);
+
+        TestUtil.updateTodoList();
+        assertEquals(todoList.size(), 0);
     }
 }
