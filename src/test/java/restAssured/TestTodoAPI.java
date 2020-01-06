@@ -5,6 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
+import io.restassured.response.Response;
 import org.apache.http.HttpStatus;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -13,8 +14,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 
-import static io.restassured.RestAssured.delete;
-import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.*;
 import static io.restassured.http.ContentType.JSON;
 import static org.testng.Assert.assertEquals;
 
@@ -46,7 +46,7 @@ public class TestTodoAPI extends BaseTest {
                         post(TODO_LIST_URL).
                 then().
                 // Assert
-                assertThat().statusCode(HttpStatus.SC_OK);
+                        assertThat().statusCode(HttpStatus.SC_OK);
 
         TestUtil.updateTodoList();
         int m = TestUtil.getNumberOfEntries(todoList, entry);
@@ -54,14 +54,30 @@ public class TestTodoAPI extends BaseTest {
     }
 
     @Test
-    public void testDeleteAllEntries(){
+    public void testDeleteAllEntries() {
         // Act
         delete(TODO_LIST_URL).then().
 
                 // Assert
-                assertThat().statusCode(HttpStatus.SC_OK);
+                        assertThat().statusCode(HttpStatus.SC_OK);
 
         TestUtil.updateTodoList();
         assertEquals(todoList.size(), 0);
+    }
+
+    @Test
+    public void testListEntries() {
+        // Act
+        Response response = get(TODO_LIST_URL).then().
+                // Assert
+                        assertThat().statusCode(HttpStatus.SC_OK).
+                        extract().response();
+
+        JsonArray todolistArray = JsonParser.parseString(response.asString()).getAsJsonArray();
+        todolistArray.forEach(entryJson -> {
+            Gson gson = new Gson();
+            Entry entry = gson.fromJson(entryJson, Entry.class);
+            todoList.add(entry);
+        });
     }
 }
