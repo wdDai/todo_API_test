@@ -7,9 +7,9 @@ pipeline {
     stages {
         stage('build') {
              steps {
-                git branch: 'restAssured_TodoListController',
+                git branch: 'restAssured',
                 credentialsId: 'a60f361f-7560-4eb2-af7f-3d5189fd1f4b',
-                url: 'git@github.com:hejhj/JavaToDoApi.git'
+                url: 'git@github.com:wdDai/todo_API_test.git'
 
                 sh "mvn -DskipTests=true clean package"
                 sh "./runApp.sh"
