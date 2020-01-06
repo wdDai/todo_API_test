@@ -16,7 +16,7 @@ import java.util.ArrayList;
 
 import static io.restassured.RestAssured.*;
 import static io.restassured.http.ContentType.JSON;
-import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.*;
 
 public class TestTodoAPI extends BaseTest {
     @DataProvider
@@ -28,6 +28,11 @@ public class TestTodoAPI extends BaseTest {
         newEntriesJsonArray = JsonParser.parseReader(reader).getAsJsonArray();
         newEntriesJsonArray.forEach(item -> newEntriesJson.add(item.getAsJsonObject()));
         return newEntriesJson.toArray();
+    }
+
+    @DataProvider
+    private Object[] limitNumber() {
+        return new Integer[]{1, 3, 5};
     }
 
     @Test(dataProvider = "newEntries")
@@ -79,5 +84,57 @@ public class TestTodoAPI extends BaseTest {
             Entry entry = gson.fromJson(entryJson, Entry.class);
             todoList.add(entry);
         });
+    }
+
+    @Test
+    public void testGetNumberOfEntries() {
+        // Act
+        Response response = get(TODO_LIST_URL + "/count").then().
+
+                // Assert
+                        assertThat().statusCode(HttpStatus.SC_OK).
+                        extract().response();
+
+        int numberOfEntries = Integer.parseInt(response.asString());
+        TestUtil.updateTodoList();
+        assertEquals(numberOfEntries, todoList.size());
+    }
+
+    @Test(dataProvider = "limitNumber")
+    public void testListWithLimit(int limitNumber) {
+        todoList.clear();
+
+        Response response =
+
+                // Act
+                get(TODO_LIST_URL + "/" + limitNumber).then().
+
+                        // Assert
+                                assertThat().statusCode(HttpStatus.SC_OK).
+                        extract().response();
+
+        JsonArray todolistArray = JsonParser.parseString(response.asString()).getAsJsonArray();
+        todolistArray.forEach(entryJson -> {
+            Gson gson = new Gson();
+            Entry entry = gson.fromJson(entryJson, Entry.class);
+            todoList.add(entry);
+        });
+        assertTrue(todoList.size() <= limitNumber);
+    }
+
+    @Test
+    public void testDeleteEntriesByTitle() {
+        TestUtil.updateTodoList();
+        Entry entry = todoList.get(0);
+
+        // Act
+        Response response = delete(TODO_LIST_URL + "?title=" + entry.title).then().
+
+                // Assert
+                        assertThat().statusCode(HttpStatus.SC_OK).
+                        extract().response();
+
+        TestUtil.updateTodoList();
+        assertFalse(todoList.stream().anyMatch(entryI -> entryI.title.equals(entry.title)));
     }
 }
