@@ -12,6 +12,7 @@ pipeline {
                 url: 'git@github.com:wdDai/todo_API_test.git'
 
                 sh "mvn -DskipTests=true clean package"
+                sh "chmod +x ./runApp.sh"
                 sh "./runApp.sh"
                 sh "sleep 3"
              }
