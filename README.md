@@ -18,7 +18,7 @@ http://localhost:8081/swagger-ui.html
 ## Run Test
 Using Maven to run test:
 ```$xslt
-mvn run
+mvn test
 ```
 ## Test built with
 - Maven
