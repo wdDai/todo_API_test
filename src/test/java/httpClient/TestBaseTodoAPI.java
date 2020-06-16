@@ -1,8 +1,8 @@
 package httpClient;
 
-import com.google.gson.*;
-import com.google.gson.stream.JsonReader;
-import org.apache.http.HttpStatus;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -13,24 +13,15 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
 
+import static httpClient.Utils.*;
+import static org.apache.http.HttpStatus.SC_OK;
 import static org.testng.Assert.*;
 
-public class TestTodoAPI extends BaseTest {
+public class TestBaseTodoAPI extends TestBase {
     @DataProvider
     private Object[] newEntries() {
-        JsonArray newEntriesJsonArray;
-        ArrayList<JsonObject> newEntriesJson = new ArrayList<>();
-        InputStream inputStream = getClass().getClassLoader().getResourceAsStream("newEntries.json");
-        JsonReader reader = new JsonReader(new InputStreamReader(inputStream));
-        newEntriesJsonArray = JsonParser.parseReader(reader).getAsJsonArray();
-        for (JsonElement jsonElement : newEntriesJsonArray) {
-            newEntriesJson.add(jsonElement.getAsJsonObject());
-        }
-        return newEntriesJson.toArray();
+        return getNewEntries().toArray();
     }
 
     @DataProvider
@@ -40,7 +31,6 @@ public class TestTodoAPI extends BaseTest {
 
     @Test
     public void testSendMailReporting() throws IOException {
-
         // Arrange
         HttpGet get = new HttpGet(REPORTING_URL);
 
@@ -49,23 +39,21 @@ public class TestTodoAPI extends BaseTest {
 
         // Assert
         int status = response.getStatusLine().getStatusCode();
-        assertEquals(status, HttpStatus.SC_OK);
+        assertEquals(status, SC_OK);
     }
 
     @Test(dataProvider = "newEntries")
     public void testAddEntry(JsonObject entryJson) throws IOException {
-
+        // Arrange
         // Count existing entries that have the same values as the new Entry before adding it to todolist
-        Gson gson = new Gson();
-        Entry entry = gson.fromJson(entryJson, Entry.class);
-        int n = TestUtil.numberOfEntries(todoList, entry);
+        Entry entry = new Gson().fromJson(entryJson, Entry.class);
+        int n = numberOfEntries(todoList, entry);
 
-        HttpPost post = new HttpPost(TODO_LIST_URL);
+        HttpPost post = new HttpPost(TODOLIST_URL);
 
-        String entryString = entryJson.toString();
-        StringEntity entryEntity = new StringEntity(entryString);
+        StringEntity entity = new StringEntity(entryJson.toString());
 
-        post.setEntity(entryEntity);
+        post.setEntity(entity);
         post.setHeader("Content-type", "application/json");
 
         // Act
@@ -73,103 +61,95 @@ public class TestTodoAPI extends BaseTest {
         int actualStatus = response.getStatusLine().getStatusCode();
 
         // Assert
-        assertEquals(actualStatus, HttpStatus.SC_OK);
-        TestUtil.updateTodolist();
+        assertEquals(actualStatus, SC_OK);
+        updateTodolist();
 
         // Assert new entry is in todoList
         // 1.Count the number of entries that have the values of jsonEntry
         // 2.Assert that the number has increased by 1
-        int m = TestUtil.numberOfEntries(todoList, entry);
+        int m = numberOfEntries(todoList, entry);
         assertEquals(n + 1, m);
     }
 
     @Test
     public void testDeleteAllEntries() throws IOException {
-        HttpDelete delete = new HttpDelete(TODO_LIST_URL);
+        //Arrange
+        HttpDelete delete = new HttpDelete(TODOLIST_URL);
         // Act
         response = client.execute(delete);
         int actualStatus = response.getStatusLine().getStatusCode();
 
         // Assert
-        assertEquals(actualStatus, HttpStatus.SC_OK);
-        TestUtil.updateTodolist();
-        // Verify all entries have been deleted
+        assertEquals(actualStatus, SC_OK);
+        updateTodolist();
         assertEquals(todoList.size(), 0);
     }
 
     @Test
     public void testListEntries() throws IOException {
-        HttpGet get = new HttpGet(TODO_LIST_URL);
+        // Arrange
+        HttpGet get = new HttpGet(TODOLIST_URL);
 
         // Act
         response = client.execute(get);
         int actualStatus = response.getStatusLine().getStatusCode();
 
         // Assert
-        assertEquals(actualStatus, HttpStatus.SC_OK);
+        assertEquals(actualStatus, SC_OK);
 
-        todoList.clear();
-        String json = EntityUtils.toString(response.getEntity());
-        JsonArray todoArray = JsonParser.parseString(json).getAsJsonArray();
-        todoArray.forEach(jsonElement -> {
-            Gson gson = new Gson();
-            Entry entry = gson.fromJson(jsonElement, Entry.class);
-            todoList.add(entry);
-        });
+        // Clean up
+        updateTodolist();
     }
 
     @Test
     public void testGetNumberOfEntries() throws IOException {
-        HttpGet get = new HttpGet(TODO_LIST_URL + "/count");
+        // Arrange
+        HttpGet get = new HttpGet(TODOLIST_URL + "/count");
 
         // Act
         response = client.execute(get);
 
         // Assert
         int actualStatus = response.getStatusLine().getStatusCode();
-        assertEquals(actualStatus, HttpStatus.SC_OK);
+        assertEquals(actualStatus, SC_OK);
         String jsonBody = EntityUtils.toString(response.getEntity());
         int numberOfEntries = Integer.parseInt(jsonBody);
-        TestUtil.updateTodolist();
+        updateTodolist();
         assertEquals(numberOfEntries, todoList.size());
     }
 
     @Test(dataProvider = "limitNumber")
     public void testListWithLimit(int limitNumber) throws IOException {
-        HttpGet get = new HttpGet(TODO_LIST_URL + "/" + limitNumber);
+        // Arrange
+        HttpGet get = new HttpGet(TODOLIST_URL + "/" + limitNumber);
 
         // Act
         response = client.execute(get);
         int actualStatus = response.getStatusLine().getStatusCode();
-        assertEquals(actualStatus, HttpStatus.SC_OK);
+        assertEquals(actualStatus, SC_OK);
 
         // Assert result
-        if (actualStatus == HttpStatus.SC_OK) {
+        if (actualStatus == SC_OK) {
             todoList.clear();
-            String json = EntityUtils.toString(response.getEntity());
-            JsonArray jasonArray = JsonParser.parseString(json).getAsJsonArray();
-            for (int i = 0; i < jasonArray.size(); i++) {
-                Gson gson = new Gson();
-                Entry entry = gson.fromJson(jasonArray.get(i), Entry.class);
-                todoList.add(entry);
-            }
+            extractResToList(response);
             assertTrue(limitNumber >= todoList.size());
         }
     }
 
     @Test
     public void testDeleteEntriesByTitle() throws IOException {
-        TestUtil.updateTodolist();
+        // Arrange
+        updateTodolist();
         Entry entry = todoList.get(0);
-        HttpDelete delete = new HttpDelete( TODO_URL + "?title=" + entry.title);
+        HttpDelete delete = new HttpDelete(TODO_URL + "?title=" + entry.title);
 
         // Act
         response = client.execute(delete);
         int actualStatus = response.getStatusLine().getStatusCode();
 
         // Assert
-        assertEquals(actualStatus, HttpStatus.SC_OK);
-        TestUtil.updateTodolist();
+        assertEquals(actualStatus, SC_OK);
+        updateTodolist();
         assertFalse(todoList.stream().anyMatch(entryI -> entryI.title.equals(entry.title)));
     }
 
@@ -184,13 +164,14 @@ public class TestTodoAPI extends BaseTest {
         int actualStatus = response.getStatusLine().getStatusCode();
 
         // Assert
-        assertEquals(actualStatus, HttpStatus.SC_OK);
-        TestUtil.updateTodolist();
+        assertEquals(actualStatus, SC_OK);
+        updateTodolist();
         assertFalse(todoList.stream().anyMatch(entryI -> entryI.id.equals(entry.id)));
     }
 
     @Test
     public void testFindEntryById() throws IOException {
+        // Arrange
         Entry entryFound;
         Entry entry = todoList.get(0);
 
@@ -200,12 +181,11 @@ public class TestTodoAPI extends BaseTest {
         int actualStatus = response.getStatusLine().getStatusCode();
 
         // Assert
-        assertEquals(actualStatus, HttpStatus.SC_OK);
+        assertEquals(actualStatus, SC_OK);
         String jsonString = EntityUtils.toString(response.getEntity());
         JsonObject entryJson = JsonParser.parseString(jsonString).getAsJsonObject();
-        Gson gson = new Gson();
-        entryFound = gson.fromJson(entryJson, Entry.class);
-        assertTrue(entry.equals(entryFound));
+        entryFound = new Gson().fromJson(entryJson, Entry.class);
+        assertEquals(entryFound, entry);
     }
 
     @Test
@@ -220,8 +200,8 @@ public class TestTodoAPI extends BaseTest {
         int actualStatus = response.getStatusLine().getStatusCode();
 
         // Assert
-        assertEquals(actualStatus, HttpStatus.SC_OK);
-        TestUtil.updateTodolist();
+        assertEquals(actualStatus, SC_OK);
+        updateTodolist();
         entry = todoList.get(0);
         assertEquals(done, (boolean) entry.done);
     }

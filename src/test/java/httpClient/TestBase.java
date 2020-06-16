@@ -9,9 +9,9 @@ import org.testng.annotations.BeforeMethod;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class BaseTest {
+public class TestBase {
     static final String REPORTING_URL = "http://localhost:8081/api/reporting/mail";
-    static final String TODO_LIST_URL = "http://localhost:8081/api/todolist";
+    static final String TODOLIST_URL = "http://localhost:8081/api/todolist";
     static final String TODO_URL = "http://localhost:8081/api/todo";
     static CloseableHttpClient client;
     static CloseableHttpResponse response;
@@ -20,14 +20,14 @@ public class BaseTest {
     @BeforeMethod
     public void setUp() throws IOException {
         client = HttpClientBuilder.create().build();
-        TestUtil.deleteAllEntries();
-        TestUtil.addNewEntries();
-        TestUtil.updateTodolist();
+        Utils.deleteAllEntries();
+        Utils.addNewEntries();
+        Utils.updateTodolist();
     }
 
     @AfterMethod
     public void cleanUp() throws IOException {
-        TestUtil.deleteAllEntries();
+        Utils.deleteAllEntries();
         client.close();
         response.close();
     }
